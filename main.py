@@ -20,7 +20,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 class TradingSimulator:
     def __init__(self, initial_cash=100000):
         """
@@ -94,6 +93,25 @@ class TradingSimulator:
         plt.grid()
         plt.show()
 
+    def calculate_performance_metrics(self):
+        """
+        Calculate performance metrics: Sharpe Ratio and Maximum Drawdown.
+        """
+        # Calculate daily returns
+        self.data["Daily_Return"] = self.data["Portfolio_Value"].pct_change()
+
+        # Sharpe Ratio
+        average_return = self.data["Daily_Return"].mean()
+        std_dev_return = self.data["Daily_Return"].std()
+        sharpe_ratio = average_return / std_dev_return
+        annualized_sharpe = sharpe_ratio * (252 ** 0.5)  # Assuming 252 trading days
+
+        # Maximum Drawdown
+        self.data["Running_Max"] = self.data["Portfolio_Value"].cummax()
+        self.data["Drawdown"] = (self.data["Portfolio_Value"] - self.data["Running_Max"]) / self.data["Running_Max"]
+        max_drawdown = self.data["Drawdown"].min()
+
+        return annualized_sharpe, max_drawdown
 
     def simulate_trades(self):
         """
@@ -125,18 +143,17 @@ class TradingSimulator:
 
         print("Trade simulation complete!")
         print(self.data[["Close", "Signal", "Portfolio_Value"]].tail())  # Verify results
-        print("Trade simulation complete!")
-        print(self.data[["Close", "Signal", "Portfolio_Value"]].tail())  # Verify results
 
         # Final Summary
         total_portfolio_value = self.cash + (self.position * self.data["Close"].iloc[-1])
+        sharpe_ratio, max_drawdown = self.calculate_performance_metrics()
         print(f"\nFinal Portfolio Summary:")
         print(f"  Cash: {self.cash:.2f}")
         print(f"  Positions: {self.position}")
         print(f"  Total Portfolio Value: {total_portfolio_value:.2f}")
         print(f"  Profit/Loss: {((total_portfolio_value - self.initial_cash) / self.initial_cash) * 100:.2f}%")
-
-
+        print(f"  Sharpe Ratio (Annualized): {sharpe_ratio:.2f}")
+        print(f"  Maximum Drawdown: {max_drawdown:.2%}")
 
 if __name__ == "__main__":
     # Initialize the simulator
@@ -150,3 +167,6 @@ if __name__ == "__main__":
 
     # Simulate trades based on signals
     simulator.simulate_trades()
+
+    # Plot portfolio performance
+    simulator.plot_portfolio()
